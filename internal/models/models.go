@@ -1,16 +1,13 @@
-// internal/models/models.go
 package models
 
 import "time"
 
-// Base — базовая структура для всех моделей
 type Base struct {
 	ID        string    `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// Person — общие поля для людей
 type Person struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
@@ -18,25 +15,22 @@ type Person struct {
 	Phone     string `json:"phone"`
 }
 
-// Student — слушатель учебного центра
 type Student struct {
 	Base
 	Person
 	GroupID     string    `json:"group_id,omitempty"`
 	EnrolledAt  time.Time `json:"enrolled_at"`
 	IsActive    bool      `json:"is_active"`
-	StudentCard string    `json:"student_card"` // номер студенческого
+	StudentCard string    `json:"student_card"`
 }
 
-// Teacher — преподаватель
 type Teacher struct {
 	Base
 	Person
 	Specialization string   `json:"specialization"`
-	Courses        []string `json:"course_ids"` // какие курсы ведет
+	Courses        []string `json:"course_ids"`
 }
 
-// Course — учебный курс
 type Course struct {
 	Base
 	Name          string  `json:"name"`
@@ -46,7 +40,6 @@ type Course struct {
 	Price         float64 `json:"price"`
 }
 
-// Group — учебная группа
 type Group struct {
 	Base
 	Name        string    `json:"name"`
@@ -54,11 +47,10 @@ type Group struct {
 	StudentIDs  []string  `json:"student_ids"`
 	StartDate   time.Time `json:"start_date"`
 	EndDate     time.Time `json:"end_date"`
-	Status      string    `json:"status"` // active, finished, cancelled
+	Status      string    `json:"status"`
 	MaxStudents int       `json:"max_students"`
 }
 
-// Lesson — занятие (расписание)
 type Lesson struct {
 	Base
 	GroupID     string    `json:"group_id"`
@@ -70,26 +62,23 @@ type Lesson struct {
 	TeacherID   string    `json:"teacher_id"`
 }
 
-// Attendance — посещаемость
 type Attendance struct {
 	LessonID  string    `json:"lesson_id"`
 	StudentID string    `json:"student_id"`
 	Present   bool      `json:"present"`
 	MarkedAt  time.Time `json:"marked_at"`
-	MarkedBy  string    `json:"marked_by"` // кто отметил (учитель)
+	MarkedBy  string    `json:"marked_by"`
 }
 
-// Grade — оценка
 type Grade struct {
 	StudentID string    `json:"student_id"`
 	LessonID  string    `json:"lesson_id"`
-	Value     int       `json:"value"` // 1-5 или 0-100
+	Value     int       `json:"value"`
 	Comment   string    `json:"comment"`
 	GradedAt  time.Time `json:"graded_at"`
 	GradedBy  string    `json:"graded_by"`
 }
 
-// Report — ведомость успеваемости
 type Report struct {
 	StudentID    string       `json:"student_id"`
 	GroupID      string       `json:"group_id"`

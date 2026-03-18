@@ -1,11 +1,11 @@
-package errorslib
+package errors
 
 import "fmt"
 
 type AppError struct {
-	Op   string // Операция, где произошла ошибка (например, "CreateStudent")
-	Code string // Код ошибки для логирования и проверок
-	Err  error  // Вложенная ошибка (если есть)
+	Op   string
+	Code string
+	Err  error
 }
 
 func (e *AppError) Error() string {

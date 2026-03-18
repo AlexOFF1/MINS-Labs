@@ -1,14 +1,12 @@
-// internal/repository/memory/student_repo.go
-package repository
+package memory
 
 import (
 	"context"
+	"mins_EduCenter/internal/models"
+	"mins_EduCenter/internal/repository"
+	"mins_EduCenter/pkg/errors"
 	"sync"
 	"time"
-
-	"/internal/models"
-	"/internal/repository"
-	"/pkg/errors"
 )
 
 type studentRepository struct {
@@ -24,29 +22,24 @@ func NewStudentRepository() repository.StudentRepository {
 
 func (r *studentRepository) Create(ctx context.Context, student *models.Student) error {
 	const op = "StudentRepository.Create"
-
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if student.ID == "" {
-		student.ID = generateID() // функция генерации ID
+		student.ID = generateID("stu")
 	}
-
 	if _, exists := r.store[student.ID]; exists {
 		return errors.NewDuplicateError(op, "Student", student.ID)
 	}
-
 	now := time.Now()
 	student.CreatedAt = now
 	student.UpdatedAt = now
-
 	r.store[student.ID] = student
 	return nil
 }
 
 func (r *studentRepository) GetByID(ctx context.Context, id string) (*models.Student, error) {
 	const op = "StudentRepository.GetByID"
-
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -70,14 +63,12 @@ func (r *studentRepository) GetAll(ctx context.Context) ([]*models.Student, erro
 
 func (r *studentRepository) Update(ctx context.Context, student *models.Student) error {
 	const op = "StudentRepository.Update"
-
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if _, exists := r.store[student.ID]; !exists {
 		return errors.NewNotFoundError(op, "Student")
 	}
-
 	student.UpdatedAt = time.Now()
 	r.store[student.ID] = student
 	return nil
@@ -85,14 +76,12 @@ func (r *studentRepository) Update(ctx context.Context, student *models.Student)
 
 func (r *studentRepository) Delete(ctx context.Context, id string) error {
 	const op = "StudentRepository.Delete"
-
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if _, exists := r.store[id]; !exists {
 		return errors.NewNotFoundError(op, "Student")
 	}
-
 	delete(r.store, id)
 	return nil
 }
@@ -136,12 +125,10 @@ func (r *studentRepository) Search(ctx context.Context, query string) ([]*models
 	return result, nil
 }
 
-// вспомогательная функция
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && s[:len(substr)] == substr
+func generateID(prefix string) string {
+	return prefix + "-" + time.Now().Format("20060102150405")
 }
 
-// заглушка для генерации ID
-func generateID() string {
-	return "student_" + time.Now().Format("20060102150405")
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && s[:len(substr)] == substr
 }
