@@ -60,6 +60,7 @@ type Lesson struct {
 	EndTime     time.Time `json:"end_time"`
 	Room        string    `json:"room"`
 	TeacherID   string    `json:"teacher_id"`
+	Status      string    `json:"status"` // scheduled, completed, cancelled
 }
 
 type Attendance struct {
@@ -73,10 +74,20 @@ type Attendance struct {
 type Grade struct {
 	StudentID string    `json:"student_id"`
 	LessonID  string    `json:"lesson_id"`
-	Value     int       `json:"value"`
+	Value     int       `json:"value"` // 1-5 или 0-100
 	Comment   string    `json:"comment"`
 	GradedAt  time.Time `json:"graded_at"`
 	GradedBy  string    `json:"graded_by"`
+	Type      string    `json:"type"` // exam, test, homework, etc.
+}
+
+type GradeBook struct {
+	GroupID     string              `json:"group_id"`
+	CourseName  string              `json:"course_name"`
+	Lessons     []*Lesson           `json:"lessons"`
+	Students    []*Student          `json:"students"`
+	Grades      map[string][]*Grade `json:"grades"` // studentID -> grades
+	GeneratedAt time.Time           `json:"generated_at"`
 }
 
 type Report struct {

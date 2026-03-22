@@ -63,36 +63,30 @@ func (s *StudentUsecase) Register(ctx context.Context, dto RegisterDTO) (*models
 func (s *StudentUsecase) EnrollToGroup(ctx context.Context, studentID, groupID string) error {
 	const op = "StudentUsecase.EnrollToGroup"
 
-	// Check student exists
 	student, err := s.studentRepo.GetByID(ctx, studentID)
 	if err != nil {
 		return errors.NewValidationError(op, "studentID", "student not found")
 	}
 
-	// Check group exists
 	group, err := s.groupRepo.GetByID(ctx, groupID)
 	if err != nil {
 		return errors.NewValidationError(op, "groupID", "group not found")
 	}
 
-	// Check group capacity
 	if len(group.StudentIDs) >= group.MaxStudents {
 		return errors.NewValidationError(op, "groupID", "group is full")
 	}
 
-	// Check if already enrolled
 	for _, id := range group.StudentIDs {
 		if id == studentID {
 			return errors.NewDuplicateError(op, "Student", "already in group")
 		}
 	}
 
-	// Add to group
 	if err := s.groupRepo.AddStudent(ctx, groupID, studentID); err != nil {
 		return errors.NewInternalError(op, err)
 	}
 
-	// Update student
 	student.GroupID = groupID
 	if err := s.studentRepo.Update(ctx, student); err != nil {
 		return errors.NewInternalError(op, err)

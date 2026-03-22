@@ -35,6 +35,8 @@ type LessonRepository interface {
 	GetByDateRange(ctx context.Context, from, to time.Time) ([]*models.Lesson, error)
 	Update(ctx context.Context, lesson *models.Lesson) error
 	Delete(ctx context.Context, id string) error
+	GetScheduleForStudent(ctx context.Context, studentID string) ([]*models.Lesson, error)
+	GetUpcomingLessons(ctx context.Context, groupID string, limit int) ([]*models.Lesson, error)
 }
 
 type AttendanceRepository interface {
@@ -42,6 +44,8 @@ type AttendanceRepository interface {
 	GetByLesson(ctx context.Context, lessonID string) ([]*models.Attendance, error)
 	GetByStudent(ctx context.Context, studentID string) ([]*models.Attendance, error)
 	GetByDateRange(ctx context.Context, from, to time.Time) ([]*models.Attendance, error)
+	GetAttendanceStats(ctx context.Context, groupID string) (map[string]float64, error)
+	MarkBatch(ctx context.Context, attendanceList []*models.Attendance) error
 }
 
 type GradeRepository interface {
@@ -49,4 +53,6 @@ type GradeRepository interface {
 	GetByStudent(ctx context.Context, studentID string) ([]*models.Grade, error)
 	GetByLesson(ctx context.Context, lessonID string) ([]*models.Grade, error)
 	GetAverageForStudent(ctx context.Context, studentID string) (float64, error)
+	GetGradeBook(ctx context.Context, groupID string) (*models.GradeBook, error)
+	UpdateGrade(ctx context.Context, studentID, lessonID string, value int) error
 }
