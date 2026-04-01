@@ -52,12 +52,10 @@ func (u *StudentUsecase) Register(ctx context.Context, dto RegisterDTO) (*models
 	}
 
 	student := &models.Student{
-		Person: models.Person{
-			FirstName: dto.FirstName,
-			LastName:  dto.LastName,
-			Email:     dto.Email,
-			Phone:     dto.Phone,
-		},
+		FirstName:   dto.FirstName,
+		LastName:    dto.LastName,
+		Email:       dto.Email,
+		Phone:       dto.Phone,
 		EnrolledAt:  time.Now(),
 		IsActive:    true,
 		StudentCard: generateStudentCard(),
