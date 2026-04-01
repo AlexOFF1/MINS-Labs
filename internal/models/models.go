@@ -2,22 +2,16 @@ package models
 
 import "time"
 
-type Base struct {
+type Student struct {
 	ID        string    `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-}
 
-type Person struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Email     string `json:"email"`
 	Phone     string `json:"phone"`
-}
 
-type Student struct {
-	Base
-	Person
 	GroupID     string    `json:"group_id,omitempty"`
 	EnrolledAt  time.Time `json:"enrolled_at"`
 	IsActive    bool      `json:"is_active"`
@@ -25,7 +19,10 @@ type Student struct {
 }
 
 type Group struct {
-	Base
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
 	Name        string    `json:"name"`
 	CourseID    string    `json:"course_id"`
 	StudentIDs  []string  `json:"student_ids"`
@@ -36,7 +33,10 @@ type Group struct {
 }
 
 type Lesson struct {
-	Base
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
 	GroupID     string    `json:"group_id"`
 	Topic       string    `json:"topic"`
 	Description string    `json:"description"`
