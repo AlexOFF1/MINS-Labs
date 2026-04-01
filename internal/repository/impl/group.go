@@ -1,4 +1,4 @@
-package memory
+package impl
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func NewGroupRepository() repository.GroupRepository {
 }
 
 func (r *groupRepository) Create(ctx context.Context, group *models.Group) error {
-	const op = "GroupRepository.Create"
+	const op = "groupRepository.Create"
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -39,7 +39,7 @@ func (r *groupRepository) Create(ctx context.Context, group *models.Group) error
 }
 
 func (r *groupRepository) GetByID(ctx context.Context, id string) (*models.Group, error) {
-	const op = "GroupRepository.GetByID"
+	const op = "groupRepository.GetByID"
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -62,7 +62,7 @@ func (r *groupRepository) GetAll(ctx context.Context) ([]*models.Group, error) {
 }
 
 func (r *groupRepository) Update(ctx context.Context, group *models.Group) error {
-	const op = "GroupRepository.Update"
+	const op = "groupRepository.Update"
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -75,7 +75,7 @@ func (r *groupRepository) Update(ctx context.Context, group *models.Group) error
 }
 
 func (r *groupRepository) Delete(ctx context.Context, id string) error {
-	const op = "GroupRepository.Delete"
+	const op = "groupRepository.Delete"
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -87,7 +87,7 @@ func (r *groupRepository) Delete(ctx context.Context, id string) error {
 }
 
 func (r *groupRepository) AddStudent(ctx context.Context, groupID, studentID string) error {
-	const op = "GroupRepository.AddStudent"
+	const op = "groupRepository.AddStudent"
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -106,7 +106,7 @@ func (r *groupRepository) AddStudent(ctx context.Context, groupID, studentID str
 }
 
 func (r *groupRepository) RemoveStudent(ctx context.Context, groupID, studentID string) error {
-	const op = "GroupRepository.RemoveStudent"
+	const op = "groupRepository.RemoveStudent"
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

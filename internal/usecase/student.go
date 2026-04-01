@@ -5,7 +5,7 @@ import (
 	"mins_EduCenter/internal/models"
 	"mins_EduCenter/internal/repository"
 	"mins_EduCenter/pkg/errors"
-	"regexp"
+	"mins_EduCenter/pkg/validation"
 	"time"
 )
 
@@ -34,11 +34,21 @@ type RegisterDTO struct {
 	Phone     string
 }
 
-func (s *StudentUsecase) Register(ctx context.Context, dto RegisterDTO) (*models.Student, error) {
+func (u *StudentUsecase) Register(ctx context.Context, dto RegisterDTO) (*models.Student, error) {
 	const op = "StudentUsecase.Register"
 
-	if err := s.validateRegisterData(dto); err != nil {
-		return nil, err
+	studentData := &validation.StudentRegisterData{
+		FirstName: dto.FirstName,
+		LastName:  dto.LastName,
+		Email:     dto.Email,
+		Phone:     dto.Phone,
+	}
+
+	if err := validation.Validate(studentData); err != nil {
+		if valErr, ok := err.(*validation.ValidationError); ok {
+			return nil, errors.NewValidationError(op, valErr.Field, valErr.Message)
+		}
+		return nil, errors.NewValidationError(op, "unknown", err.Error())
 	}
 
 	student := &models.Student{
@@ -53,22 +63,32 @@ func (s *StudentUsecase) Register(ctx context.Context, dto RegisterDTO) (*models
 		StudentCard: generateStudentCard(),
 	}
 
-	if err := s.studentRepo.Create(ctx, student); err != nil {
+	if err := u.studentRepo.Create(ctx, student); err != nil {
 		return nil, errors.NewInternalError(op, err)
 	}
-
 	return student, nil
 }
 
-func (s *StudentUsecase) EnrollToGroup(ctx context.Context, studentID, groupID string) error {
+func (u *StudentUsecase) EnrollToGroup(ctx context.Context, studentID, groupID string) error {
 	const op = "StudentUsecase.EnrollToGroup"
 
-	student, err := s.studentRepo.GetByID(ctx, studentID)
+	if studentID == "" {
+		return errors.NewValidationError(op, "studentID", "required")
+	}
+	if groupID == "" {
+		return errors.NewValidationError(op, "groupID", "required")
+	}
+
+	student, err := u.studentRepo.GetByID(ctx, studentID)
 	if err != nil {
 		return errors.NewValidationError(op, "studentID", "student not found")
 	}
 
-	group, err := s.groupRepo.GetByID(ctx, groupID)
+	if student.GroupID != "" {
+		return errors.NewValidationError(op, "studentID", "student already enrolled in a group")
+	}
+
+	group, err := u.groupRepo.GetByID(ctx, groupID)
 	if err != nil {
 		return errors.NewValidationError(op, "groupID", "group not found")
 	}
@@ -77,18 +97,12 @@ func (s *StudentUsecase) EnrollToGroup(ctx context.Context, studentID, groupID s
 		return errors.NewValidationError(op, "groupID", "group is full")
 	}
 
-	for _, id := range group.StudentIDs {
-		if id == studentID {
-			return errors.NewDuplicateError(op, "Student", "already in group")
-		}
-	}
-
-	if err := s.groupRepo.AddStudent(ctx, groupID, studentID); err != nil {
+	if err := u.groupRepo.AddStudent(ctx, groupID, studentID); err != nil {
 		return errors.NewInternalError(op, err)
 	}
 
 	student.GroupID = groupID
-	if err := s.studentRepo.Update(ctx, student); err != nil {
+	if err := u.studentRepo.Update(ctx, student); err != nil {
 		return errors.NewInternalError(op, err)
 	}
 
@@ -102,23 +116,20 @@ type ProgressReport struct {
 	TotalGrades  int
 }
 
-func (s *StudentUsecase) GetProgress(ctx context.Context, studentID string) (*ProgressReport, error) {
+func (u *StudentUsecase) GetProgress(ctx context.Context, studentID string) (*ProgressReport, error) {
 	const op = "StudentUsecase.GetProgress"
 
-	student, err := s.studentRepo.GetByID(ctx, studentID)
+	student, err := u.studentRepo.GetByID(ctx, studentID)
 	if err != nil {
 		return nil, errors.NewValidationError(op, "studentID", "student not found")
 	}
 
-	grades, err := s.gradeRepo.GetByStudent(ctx, studentID)
+	grades, err := u.gradeRepo.GetByStudent(ctx, studentID)
 	if err != nil {
 		return nil, errors.NewInternalError(op, err)
 	}
 
-	avg, err := s.gradeRepo.GetAverageForStudent(ctx, studentID)
-	if err != nil {
-		return nil, errors.NewInternalError(op, err)
-	}
+	avg, _ := u.gradeRepo.GetAverageForStudent(ctx, studentID)
 
 	return &ProgressReport{
 		Student:      student,
@@ -126,25 +137,6 @@ func (s *StudentUsecase) GetProgress(ctx context.Context, studentID string) (*Pr
 		AverageGrade: avg,
 		TotalGrades:  len(grades),
 	}, nil
-}
-
-func (s *StudentUsecase) validateRegisterData(dto RegisterDTO) error {
-	const op = "StudentUsecase.validateRegisterData"
-
-	if dto.FirstName == "" {
-		return errors.NewValidationError(op, "FirstName", "required")
-	}
-	if dto.LastName == "" {
-		return errors.NewValidationError(op, "LastName", "required")
-	}
-	if dto.Email == "" {
-		return errors.NewValidationError(op, "Email", "required")
-	}
-	emailRegex := regexp.MustCompile(`^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$`)
-	if !emailRegex.MatchString(dto.Email) {
-		return errors.NewValidationError(op, "Email", "invalid format")
-	}
-	return nil
 }
 
 func generateStudentCard() string {

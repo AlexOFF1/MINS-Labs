@@ -5,6 +5,7 @@ import (
 	"mins_EduCenter/internal/models"
 	"mins_EduCenter/internal/repository"
 	"mins_EduCenter/pkg/errors"
+	"mins_EduCenter/pkg/validation"
 	"time"
 )
 
@@ -42,15 +43,23 @@ type CreateLessonDTO struct {
 func (u *LessonUsecase) CreateLesson(ctx context.Context, dto CreateLessonDTO) (*models.Lesson, error) {
 	const op = "LessonUsecase.CreateLesson"
 
-	if _, err := u.groupRepo.GetByID(ctx, dto.GroupID); err != nil {
-		return nil, errors.NewValidationError(op, "GroupID", "group not found")
+	lessonData := &validation.LessonCreateData{
+		GroupID:   dto.GroupID,
+		Topic:     dto.Topic,
+		StartTime: dto.StartTime,
+		EndTime:   dto.EndTime,
+		Room:      dto.Room,
 	}
 
-	if dto.StartTime.After(dto.EndTime) {
-		return nil, errors.NewValidationError(op, "EndTime", "must be after StartTime")
+	if err := validation.Validate(lessonData); err != nil {
+		if valErr, ok := err.(*validation.ValidationError); ok {
+			return nil, errors.NewValidationError(op, valErr.Field, valErr.Message)
+		}
+		return nil, errors.NewValidationError(op, "unknown", err.Error())
 	}
-	if dto.StartTime.Before(time.Now()) {
-		return nil, errors.NewValidationError(op, "StartTime", "cannot be in past")
+
+	if _, err := u.groupRepo.GetByID(ctx, dto.GroupID); err != nil {
+		return nil, errors.NewValidationError(op, "GroupID", "group not found")
 	}
 
 	lesson := &models.Lesson{
@@ -67,48 +76,24 @@ func (u *LessonUsecase) CreateLesson(ctx context.Context, dto CreateLessonDTO) (
 	if err := u.lessonRepo.Create(ctx, lesson); err != nil {
 		return nil, errors.NewInternalError(op, err)
 	}
-
 	return lesson, nil
-}
-
-func (u *LessonUsecase) GetGroupSchedule(ctx context.Context, groupID string) ([]*models.Lesson, error) {
-	const op = "LessonUsecase.GetGroupSchedule"
-
-	lessons, err := u.lessonRepo.GetByGroup(ctx, groupID)
-	if err != nil {
-		return nil, errors.NewInternalError(op, err)
-	}
-	return lessons, nil
-}
-
-func (u *LessonUsecase) GetStudentSchedule(ctx context.Context, studentID string) ([]*models.Lesson, error) {
-	const op = "LessonUsecase.GetStudentSchedule"
-
-	student, err := u.studentRepo.GetByID(ctx, studentID)
-	if err != nil {
-		return nil, errors.NewValidationError(op, "studentID", "student not found")
-	}
-
-	if student.GroupID == "" {
-		return []*models.Lesson{}, nil
-	}
-
-	lessons, err := u.lessonRepo.GetScheduleForStudent(ctx, studentID)
-	if err != nil {
-		return nil, errors.NewInternalError(op, err)
-	}
-	return lessons, nil
-}
-
-type MarkAttendanceDTO struct {
-	LessonID  string
-	StudentID string
-	Present   bool
-	MarkedBy  string
 }
 
 func (u *LessonUsecase) MarkAttendance(ctx context.Context, dto MarkAttendanceDTO) error {
 	const op = "LessonUsecase.MarkAttendance"
+
+	attendanceData := &validation.AttendanceMarkData{
+		LessonID:  dto.LessonID,
+		StudentID: dto.StudentID,
+		Present:   dto.Present,
+	}
+
+	if err := validation.Validate(attendanceData); err != nil {
+		if valErr, ok := err.(*validation.ValidationError); ok {
+			return errors.NewValidationError(op, valErr.Field, valErr.Message)
+		}
+		return errors.NewValidationError(op, "unknown", err.Error())
+	}
 
 	lesson, err := u.lessonRepo.GetByID(ctx, dto.LessonID)
 	if err != nil {
@@ -123,52 +108,71 @@ func (u *LessonUsecase) MarkAttendance(ctx context.Context, dto MarkAttendanceDT
 		LessonID:  dto.LessonID,
 		StudentID: dto.StudentID,
 		Present:   dto.Present,
-		MarkedAt:  time.Now(),
 		MarkedBy:  dto.MarkedBy,
 	}
 
 	if err := u.attendanceRepo.Mark(ctx, attendance); err != nil {
 		return errors.NewInternalError(op, err)
 	}
-
 	return nil
+}
+
+func (u *LessonUsecase) GetGroupSchedule(ctx context.Context, groupID string) ([]*models.Lesson, error) {
+	const op = "LessonUsecase.GetGroupSchedule"
+	lessons, err := u.lessonRepo.GetByGroup(ctx, groupID)
+	if err != nil {
+		return nil, errors.NewInternalError(op, err)
+	}
+	return lessons, nil
+}
+
+func (u *LessonUsecase) GetStudentSchedule(ctx context.Context, studentID string) ([]*models.Lesson, error) {
+	const op = "LessonUsecase.GetStudentSchedule"
+	student, err := u.studentRepo.GetByID(ctx, studentID)
+	if err != nil {
+		return nil, errors.NewValidationError(op, "studentID", "student not found")
+	}
+	if student.GroupID == "" {
+		return []*models.Lesson{}, nil
+	}
+	return u.GetGroupSchedule(ctx, student.GroupID)
+}
+
+type MarkAttendanceDTO struct {
+	LessonID  string
+	StudentID string
+	Present   bool
+	MarkedBy  string
 }
 
 func (u *LessonUsecase) MarkBatchAttendance(ctx context.Context, lessonID string, attendanceMap map[string]bool, markedBy string) error {
 	const op = "LessonUsecase.MarkBatchAttendance"
-
 	lesson, err := u.lessonRepo.GetByID(ctx, lessonID)
 	if err != nil {
 		return errors.NewValidationError(op, "LessonID", "lesson not found")
 	}
-
 	students, err := u.studentRepo.GetByGroup(ctx, lesson.GroupID)
 	if err != nil {
 		return errors.NewInternalError(op, err)
 	}
-
-	var attendanceList []*models.Attendance
+	var list []*models.Attendance
 	for _, student := range students {
 		present := attendanceMap[student.ID]
-		attendanceList = append(attendanceList, &models.Attendance{
+		list = append(list, &models.Attendance{
 			LessonID:  lessonID,
 			StudentID: student.ID,
 			Present:   present,
-			MarkedAt:  time.Now(),
 			MarkedBy:  markedBy,
 		})
 	}
-
-	if err := u.attendanceRepo.MarkBatch(ctx, attendanceList); err != nil {
+	if err := u.attendanceRepo.MarkBatch(ctx, list); err != nil {
 		return errors.NewInternalError(op, err)
 	}
-
 	return nil
 }
 
 func (u *LessonUsecase) GetLessonAttendance(ctx context.Context, lessonID string) ([]*models.Attendance, error) {
 	const op = "LessonUsecase.GetLessonAttendance"
-
 	attendance, err := u.attendanceRepo.GetByLesson(ctx, lessonID)
 	if err != nil {
 		return nil, errors.NewInternalError(op, err)

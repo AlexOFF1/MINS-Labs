@@ -1,4 +1,4 @@
-package memory
+package impl
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func NewStudentRepository() repository.StudentRepository {
 }
 
 func (r *studentRepository) Create(ctx context.Context, student *models.Student) error {
-	const op = "StudentRepository.Create"
+	const op = "studentRepository.Create"
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -34,12 +34,15 @@ func (r *studentRepository) Create(ctx context.Context, student *models.Student)
 	now := time.Now()
 	student.CreatedAt = now
 	student.UpdatedAt = now
+	if student.EnrolledAt.IsZero() {
+		student.EnrolledAt = now
+	}
 	r.store[student.ID] = student
 	return nil
 }
 
 func (r *studentRepository) GetByID(ctx context.Context, id string) (*models.Student, error) {
-	const op = "StudentRepository.GetByID"
+	const op = "studentRepository.GetByID"
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -62,7 +65,7 @@ func (r *studentRepository) GetAll(ctx context.Context) ([]*models.Student, erro
 }
 
 func (r *studentRepository) Update(ctx context.Context, student *models.Student) error {
-	const op = "StudentRepository.Update"
+	const op = "studentRepository.Update"
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -75,7 +78,7 @@ func (r *studentRepository) Update(ctx context.Context, student *models.Student)
 }
 
 func (r *studentRepository) Delete(ctx context.Context, id string) error {
-	const op = "StudentRepository.Delete"
+	const op = "studentRepository.Delete"
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

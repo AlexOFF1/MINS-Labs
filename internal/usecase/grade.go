@@ -6,6 +6,7 @@ import (
 	"mins_EduCenter/internal/models"
 	"mins_EduCenter/internal/repository"
 	"mins_EduCenter/pkg/errors"
+	"mins_EduCenter/pkg/validation"
 	"time"
 )
 
@@ -42,8 +43,18 @@ type SetGradeDTO struct {
 func (u *GradingUsecase) SetGrade(ctx context.Context, dto SetGradeDTO) error {
 	const op = "GradingUsecase.SetGrade"
 
-	if dto.Value < 1 || dto.Value > 5 {
-		return errors.NewValidationError(op, "Value", "must be between 1 and 5")
+	gradeData := &validation.GradeSetData{
+		StudentID: dto.StudentID,
+		LessonID:  dto.LessonID,
+		Value:     dto.Value,
+		Type:      dto.Type,
+	}
+
+	if err := validation.Validate(gradeData); err != nil {
+		if valErr, ok := err.(*validation.ValidationError); ok {
+			return errors.NewValidationError(op, valErr.Field, valErr.Message)
+		}
+		return errors.NewValidationError(op, "unknown", err.Error())
 	}
 
 	student, err := u.studentRepo.GetByID(ctx, dto.StudentID)
@@ -65,7 +76,6 @@ func (u *GradingUsecase) SetGrade(ctx context.Context, dto SetGradeDTO) error {
 		LessonID:  dto.LessonID,
 		Value:     dto.Value,
 		Comment:   dto.Comment,
-		GradedAt:  time.Now(),
 		GradedBy:  dto.GradedBy,
 		Type:      dto.Type,
 	}
@@ -73,13 +83,11 @@ func (u *GradingUsecase) SetGrade(ctx context.Context, dto SetGradeDTO) error {
 	if err := u.gradeRepo.Set(ctx, grade); err != nil {
 		return errors.NewInternalError(op, err)
 	}
-
 	return nil
 }
 
 func (u *GradingUsecase) GetStudentGrades(ctx context.Context, studentID string) ([]*models.Grade, error) {
 	const op = "GradingUsecase.GetStudentGrades"
-
 	grades, err := u.gradeRepo.GetByStudent(ctx, studentID)
 	if err != nil {
 		return nil, errors.NewInternalError(op, err)
@@ -89,26 +97,46 @@ func (u *GradingUsecase) GetStudentGrades(ctx context.Context, studentID string)
 
 func (u *GradingUsecase) GetGradeBook(ctx context.Context, groupID string) (*models.GradeBook, error) {
 	const op = "GradingUsecase.GetGradeBook"
-
-	gradeBook, err := u.gradeRepo.GetGradeBook(ctx, groupID)
+	_, err := u.groupRepo.GetByID(ctx, groupID)
+	if err != nil {
+		return nil, errors.NewValidationError(op, "GroupID", "group not found")
+	}
+	students, err := u.studentRepo.GetByGroup(ctx, groupID)
 	if err != nil {
 		return nil, errors.NewInternalError(op, err)
+	}
+	lessons, err := u.lessonRepo.GetByGroup(ctx, groupID)
+	if err != nil {
+		return nil, errors.NewInternalError(op, err)
+	}
+	gradesMap := make(map[string][]*models.Grade)
+	for _, student := range students {
+		grades, err := u.gradeRepo.GetByStudent(ctx, student.ID)
+		if err != nil {
+			continue
+		}
+		gradesMap[student.ID] = grades
+	}
+	gradeBook := &models.GradeBook{
+		GroupID:     groupID,
+		CourseName:  "Course Name",
+		Lessons:     lessons,
+		Students:    students,
+		Grades:      gradesMap,
+		GeneratedAt: time.Now(),
 	}
 	return gradeBook, nil
 }
 
 func (u *GradingUsecase) GetGroupAverage(ctx context.Context, groupID string) (float64, error) {
 	const op = "GradingUsecase.GetGroupAverage"
-
 	students, err := u.studentRepo.GetByGroup(ctx, groupID)
 	if err != nil {
 		return 0, errors.NewInternalError(op, err)
 	}
-
 	if len(students) == 0 {
 		return 0, nil
 	}
-
 	var total float64
 	var count int
 	for _, student := range students {
@@ -121,7 +149,6 @@ func (u *GradingUsecase) GetGroupAverage(ctx context.Context, groupID string) (f
 			count++
 		}
 	}
-
 	if count == 0 {
 		return 0, nil
 	}
@@ -130,17 +157,14 @@ func (u *GradingUsecase) GetGroupAverage(ctx context.Context, groupID string) (f
 
 func (u *GradingUsecase) GenerateReportCard(ctx context.Context, studentID string) (string, error) {
 	const op = "GradingUsecase.GenerateReportCard"
-
 	student, err := u.studentRepo.GetByID(ctx, studentID)
 	if err != nil {
-		return "", errors.NewValidationError(op, "StudentID", "student not found")
+		return "", errors.NewValidationError(op, "studentID", "student not found")
 	}
-
 	grades, err := u.gradeRepo.GetByStudent(ctx, studentID)
 	if err != nil {
 		return "", errors.NewInternalError(op, err)
 	}
-
 	avg, _ := u.gradeRepo.GetAverageForStudent(ctx, studentID)
 
 	report := fmt.Sprintf("\n=== ТАБЕЛЬ УСПЕВАЕМОСТИ ===\n")
@@ -148,7 +172,6 @@ func (u *GradingUsecase) GenerateReportCard(ctx context.Context, studentID strin
 	report += fmt.Sprintf("Группа: %s\n", student.GroupID)
 	report += fmt.Sprintf("Студенческий билет: %s\n", student.StudentCard)
 	report += "----------------------------\n"
-
 	if len(grades) == 0 {
 		report += "Оценок пока нет\n"
 	} else {
@@ -159,6 +182,5 @@ func (u *GradingUsecase) GenerateReportCard(ctx context.Context, studentID strin
 		report += fmt.Sprintf("\nСредний балл: %.2f\n", avg)
 	}
 	report += "============================\n"
-
 	return report, nil
 }
