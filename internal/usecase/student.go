@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"mins_EduCenter/internal/models"
+	"mins_EduCenter/internal/observer"
 	"mins_EduCenter/internal/repository"
 	"mins_EduCenter/pkg/errors"
 	"mins_EduCenter/pkg/validation"
@@ -13,17 +14,20 @@ type StudentUsecase struct {
 	studentRepo repository.StudentRepository
 	groupRepo   repository.GroupRepository
 	gradeRepo   repository.GradeRepository
+	notifier    *observer.Notifier
 }
 
 func NewStudentUsecase(
 	sr repository.StudentRepository,
 	gr repository.GroupRepository,
 	gdr repository.GradeRepository,
+	n *observer.Notifier,
 ) *StudentUsecase {
 	return &StudentUsecase{
 		studentRepo: sr,
 		groupRepo:   gr,
 		gradeRepo:   gdr,
+		notifier:    n,
 	}
 }
 
@@ -66,6 +70,12 @@ func (u *StudentUsecase) Register(ctx context.Context, dto RegisterDTO) (*models
 	if err := u.studentRepo.Create(ctx, student); err != nil {
 		return nil, errors.NewInternalError(op, err)
 	}
+
+	u.notifier.Notify(observer.EventStudentRegistered, map[string]interface{}{
+		"student_id": student.ID,
+		"email":      student.Email,
+	})
+
 	return student, nil
 }
 

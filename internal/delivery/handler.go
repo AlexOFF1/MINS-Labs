@@ -443,6 +443,19 @@ func (h *Handler) handleGroupStatus(ctx context.Context, args []string) {
 	fmt.Printf("✅ Статус группы изменен на: %s\n", status)
 }
 
+func (h *Handler) handleReport(ctx context.Context, args []string) {
+	if len(args) < 2 {
+		fmt.Println("❌ Использование: report <student_id> <console|html|json>")
+		return
+	}
+	content, err := h.gradingUsecase.GenerateReport(ctx, args[0], args[1])
+	if err != nil {
+		h.handleError(err)
+		return
+	}
+	fmt.Println(content)
+}
+
 func (h *Handler) Run(ctx context.Context) {
 	fmt.Println("===================================")
 	fmt.Println("📚 Учебный центр - Система управления")
@@ -497,6 +510,8 @@ func (h *Handler) Run(ctx context.Context) {
 			h.handleGradeBook(ctx, args)
 		case "reportcard", "rc":
 			h.handleReportCard(ctx, args)
+		case "report", "r":
+			h.handleReport(ctx, args)
 
 		case "help", "h":
 			h.printHelp()
@@ -538,6 +553,7 @@ func (h *Handler) printHelp() {
 	fmt.Println("    grades <student_id> - оценки студента")
 	fmt.Println("    gradebook <group_id> - ведомость группы")
 	fmt.Println("    reportcard <student_id> - табель успеваемости")
+	fmt.Println("    report <student_id> <console|html|json> - табель успеваемости")
 	fmt.Println("")
 	fmt.Println("  ОБЩЕЕ:")
 	fmt.Println("    help, h - показать справку")

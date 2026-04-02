@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"mins_EduCenter/internal/models"
+	"mins_EduCenter/internal/report"
 	"mins_EduCenter/internal/repository"
+	"mins_EduCenter/internal/strategy"
 	"mins_EduCenter/pkg/errors"
 	"mins_EduCenter/pkg/validation"
 	"time"
@@ -15,6 +17,7 @@ type GradingUsecase struct {
 	studentRepo repository.StudentRepository
 	lessonRepo  repository.LessonRepository
 	groupRepo   repository.GroupRepository
+	avgStrategy strategy.AverageStrategy
 }
 
 func NewGradingUsecase(
@@ -22,12 +25,14 @@ func NewGradingUsecase(
 	sr repository.StudentRepository,
 	lr repository.LessonRepository,
 	gpr repository.GroupRepository,
+	strategy strategy.AverageStrategy,
 ) *GradingUsecase {
 	return &GradingUsecase{
 		gradeRepo:   gr,
 		studentRepo: sr,
 		lessonRepo:  lr,
 		groupRepo:   gpr,
+		avgStrategy: strategy,
 	}
 }
 
@@ -183,4 +188,37 @@ func (u *GradingUsecase) GenerateReportCard(ctx context.Context, studentID strin
 	}
 	report += "============================\n"
 	return report, nil
+}
+
+func (u *GradingUsecase) GenerateReport(ctx context.Context, studentID string, reportType string) (string, error) {
+	const op = "GradingUsecase.GenerateReport"
+
+	student, err := u.studentRepo.GetByID(ctx, studentID)
+	if err != nil {
+		return "", errors.NewValidationError(op, "studentID", "student not found")
+	}
+	grades, err := u.gradeRepo.GetByStudent(ctx, studentID)
+	if err != nil {
+		return "", errors.NewInternalError(op, err)
+	}
+
+	factory := &report.ReportFactory{}
+	generator, err := factory.CreateReport(reportType)
+	if err != nil {
+		return "", errors.NewValidationError(op, "reportType", err.Error())
+	}
+
+	return generator.Generate(student, grades), nil
+}
+
+func (u *GradingUsecase) GetAverageForStudent(ctx context.Context, studentID string) (float64, error) {
+	grades, err := u.gradeRepo.GetByStudent(ctx, studentID)
+	if err != nil {
+		return 0, err
+	}
+	values := make([]int, len(grades))
+	for i, g := range grades {
+		values[i] = g.Value
+	}
+	return u.avgStrategy.Calculate(values), nil
 }
