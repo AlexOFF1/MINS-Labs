@@ -1,5 +1,7 @@
 package strategy
 
+// сделать динамический выбор
+
 import "sort"
 
 type AverageStrategy interface {
