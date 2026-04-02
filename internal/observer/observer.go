@@ -1,4 +1,3 @@
-// internal/observer/observer.go
 package observer
 
 type Event string

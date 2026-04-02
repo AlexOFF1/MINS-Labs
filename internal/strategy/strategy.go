@@ -44,7 +44,6 @@ func (d *DropWorstStrategy) Calculate(grades []int) float64 {
 	sorted := make([]int, len(grades))
 	copy(sorted, grades)
 	sort.Ints(sorted)
-	// отбрасываем худшую (первую)
 	trimmed := sorted[1:]
 	sum := 0
 	for _, g := range trimmed {

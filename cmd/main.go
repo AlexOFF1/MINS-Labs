@@ -18,13 +18,13 @@ func main() {
 	attendanceRepo := impl.NewAttendanceRepository()
 
 	notifier := observer.NewNotifier()
-	logger := &observer.LoggerObserver{}
+	// logger := &observer.LoggerObserver{}
 	console := &observer.ConsoleObserver{}
 
-	notifier.Subscribe(observer.EventStudentRegistered, logger)
 	notifier.Subscribe(observer.EventStudentRegistered, console)
-	notifier.Subscribe(observer.EventStudentEnrolled, logger)
-	notifier.Subscribe(observer.EventGradeAdded, logger)
+	// notifier.Subscribe(observer.EventStudentRegistered, logger)
+	// notifier.Subscribe(observer.EventStudentEnrolled, logger)
+	// notifier.Subscribe(observer.EventGradeAdded, logger)
 
 	avgStrategy := &strategy.ArithmeticMean{}
 	studentUsecase := usecase.NewStudentUsecase(studentRepo, groupRepo, gradeRepo, notifier)
