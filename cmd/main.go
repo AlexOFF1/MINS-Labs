@@ -26,10 +26,11 @@ func main() {
 	// notifier.Subscribe(observer.EventStudentEnrolled, logger)
 	// notifier.Subscribe(observer.EventGradeAdded, logger)
 
-	avgStrategy := &strategy.ArithmeticMean{}
-	studentUsecase := usecase.NewStudentUsecase(studentRepo, groupRepo, gradeRepo, notifier)
+	initialStrategy := &strategy.ArithmeticMean{}
+
+	gradingUsecase := usecase.NewGradingUsecase(gradeRepo, studentRepo, lessonRepo, groupRepo, initialStrategy)
+	studentUsecase := usecase.NewStudentUsecase(studentRepo, groupRepo, gradeRepo, gradingUsecase, notifier)
 	lessonUsecase := usecase.NewLessonUsecase(lessonRepo, attendanceRepo, groupRepo, studentRepo)
-	gradingUsecase := usecase.NewGradingUsecase(gradeRepo, studentRepo, lessonRepo, groupRepo, avgStrategy)
 	groupUsecase := usecase.NewGroupUsecase(groupRepo, studentRepo)
 
 	handler := delivery.NewHandler(studentUsecase, lessonUsecase, gradingUsecase, groupUsecase)

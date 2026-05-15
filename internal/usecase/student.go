@@ -14,6 +14,7 @@ type StudentUsecase struct {
 	studentRepo repository.StudentRepository
 	groupRepo   repository.GroupRepository
 	gradeRepo   repository.GradeRepository
+	avgCalc     repository.AverageCalculator
 	notifier    *observer.Notifier
 }
 
@@ -21,12 +22,14 @@ func NewStudentUsecase(
 	sr repository.StudentRepository,
 	gr repository.GroupRepository,
 	gdr repository.GradeRepository,
+	avgCalc repository.AverageCalculator,
 	n *observer.Notifier,
 ) *StudentUsecase {
 	return &StudentUsecase{
 		studentRepo: sr,
 		groupRepo:   gr,
 		gradeRepo:   gdr,
+		avgCalc:     avgCalc,
 		notifier:    n,
 	}
 }
@@ -139,7 +142,7 @@ func (u *StudentUsecase) GetProgress(ctx context.Context, studentID string) (*Pr
 		return nil, errors.NewInternalError(op, err)
 	}
 
-	avg, _ := u.gradeRepo.GetAverageForStudent(ctx, studentID)
+	avg, _ := u.avgCalc.GetAverageForStudent(ctx, studentID)
 
 	return &ProgressReport{
 		Student:      student,

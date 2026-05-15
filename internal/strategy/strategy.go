@@ -6,6 +6,7 @@ import "sort"
 
 type AverageStrategy interface {
 	Calculate(grades []int) float64
+	Name() string
 }
 
 type ArithmeticMean struct{}
@@ -19,6 +20,10 @@ func (a *ArithmeticMean) Calculate(grades []int) float64 {
 		sum += g
 	}
 	return float64(sum) / float64(len(grades))
+}
+
+func (a *ArithmeticMean) Name() string {
+	return "arithmetic"
 }
 
 type MedianStrategy struct{}
@@ -37,6 +42,10 @@ func (m *MedianStrategy) Calculate(grades []int) float64 {
 	return float64(sorted[mid-1]+sorted[mid]) / 2.0
 }
 
+func (a *MedianStrategy) Name() string {
+	return "median"
+}
+
 type DropWorstStrategy struct{}
 
 func (d *DropWorstStrategy) Calculate(grades []int) float64 {
@@ -52,4 +61,8 @@ func (d *DropWorstStrategy) Calculate(grades []int) float64 {
 		sum += g
 	}
 	return float64(sum) / float64(len(trimmed))
+}
+
+func (a *DropWorstStrategy) Name() string {
+	return "dropWorst"
 }

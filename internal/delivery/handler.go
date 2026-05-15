@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"mins_EduCenter/internal/models"
+	"mins_EduCenter/internal/strategy"
 	"mins_EduCenter/internal/usecase"
 	"mins_EduCenter/pkg/errors"
 	"os"
@@ -19,6 +20,7 @@ type Handler struct {
 	gradingUsecase *usecase.GradingUsecase
 	groupUsecase   *usecase.GroupUsecase
 	reader         *bufio.Reader
+	strategies     map[string]strategy.AverageStrategy
 }
 
 func NewHandler(
@@ -27,12 +29,19 @@ func NewHandler(
 	gu *usecase.GradingUsecase,
 	grpU *usecase.GroupUsecase,
 ) *Handler {
+	strategies := map[string]strategy.AverageStrategy{
+		"arithmetic": &strategy.ArithmeticMean{},
+		"median":     &strategy.MedianStrategy{},
+		"drop_worst": &strategy.DropWorstStrategy{},
+	}
+
 	return &Handler{
 		studentUsecase: su,
 		lessonUsecase:  lu,
 		gradingUsecase: gu,
 		groupUsecase:   grpU,
 		reader:         bufio.NewReader(os.Stdin),
+		strategies: strategies,
 	}
 }
 
@@ -456,6 +465,36 @@ func (h *Handler) handleReport(ctx context.Context, args []string) {
 	fmt.Println(content)
 }
 
+func (h *Handler) handleListStrategies(ctx context.Context, args []string) {
+	current := h.gradingUsecase.GetCurrentStrategyName()
+	fmt.Println("\n📊 Доступные стратегии расчёта среднего балла:")
+	for name := range h.strategies {
+		marker := " "
+		if name == current {
+			marker = "✓"
+		}
+		fmt.Printf("  %s %s\n", marker, name)
+	}
+	fmt.Println("\nИспользуйте: strategy <название> для выбора стратегии")
+}
+
+func (h *Handler) handleStrategy(ctx context.Context, args []string) {
+	if len(args) < 1 {
+		fmt.Println("❌ Использование: strategy <arithmetic|median|drop_worst>")
+		h.handleListStrategies(ctx, nil)
+		return
+	}
+	strategyName := args[0]
+	newStrategy, exists := h.strategies[strategyName]
+	if !exists {
+		fmt.Printf("❌ Неизвестная стратегия: %s\n", strategyName)
+		h.handleListStrategies(ctx, nil)
+		return
+	}
+	h.gradingUsecase.SetStrategy(newStrategy)
+	fmt.Printf("✅ Стратегия расчёта среднего балла изменена на: %s\n", strategyName)
+}
+
 func (h *Handler) Run(ctx context.Context) {
 	fmt.Println("===================================")
 	fmt.Println("📚 Учебный центр - Система управления")
@@ -491,6 +530,11 @@ func (h *Handler) Run(ctx context.Context) {
 			h.handleEnroll(ctx, args)
 		case "progress", "prog":
 			h.handleProgress(ctx, args)
+
+		case "strategy", "strat":
+			h.handleStrategy(ctx, args)
+		case "list-strategies", "lstr":
+			h.handleListStrategies(ctx, args)
 
 		case "lesson", "ls":
 			h.handleCreateLesson(ctx, args)

@@ -56,3 +56,7 @@ type GradeRepository interface {
 	GetGradeBook(ctx context.Context, groupID string) (*models.GradeBook, error)
 	UpdateGrade(ctx context.Context, studentID, lessonID string, value int) error
 }
+
+type AverageCalculator interface {
+	GetAverageForStudent(ctx context.Context, studentID string) (float64, error)
+}

@@ -17,7 +17,7 @@ type GradingUsecase struct {
 	studentRepo repository.StudentRepository
 	lessonRepo  repository.LessonRepository
 	groupRepo   repository.GroupRepository
-	avgStrategy strategy.AverageStrategy
+	strategy    strategy.AverageStrategy
 }
 
 func NewGradingUsecase(
@@ -32,7 +32,7 @@ func NewGradingUsecase(
 		studentRepo: sr,
 		lessonRepo:  lr,
 		groupRepo:   gpr,
-		avgStrategy: strategy,
+		strategy:    strategy,
 	}
 }
 
@@ -170,7 +170,7 @@ func (u *GradingUsecase) GenerateReportCard(ctx context.Context, studentID strin
 	if err != nil {
 		return "", errors.NewInternalError(op, err)
 	}
-	avg, _ := u.gradeRepo.GetAverageForStudent(ctx, studentID)
+	avg, _ := u.GetAverageForStudent(ctx, studentID)
 
 	report := fmt.Sprintf("\n=== ТАБЕЛЬ УСПЕВАЕМОСТИ ===\n")
 	report += fmt.Sprintf("Студент: %s %s\n", student.FirstName, student.LastName)
@@ -211,6 +211,14 @@ func (u *GradingUsecase) GenerateReport(ctx context.Context, studentID string, r
 	return generator.Generate(student, grades), nil
 }
 
+func (u *GradingUsecase) SetStrategy(strategy strategy.AverageStrategy) {
+	u.strategy = strategy
+}
+
+func (u *GradingUsecase) GetCurrentStrategyName() string {
+	return u.strategy.Name()
+}
+
 func (u *GradingUsecase) GetAverageForStudent(ctx context.Context, studentID string) (float64, error) {
 	grades, err := u.gradeRepo.GetByStudent(ctx, studentID)
 	if err != nil {
@@ -220,5 +228,8 @@ func (u *GradingUsecase) GetAverageForStudent(ctx context.Context, studentID str
 	for i, g := range grades {
 		values[i] = g.Value
 	}
-	return u.avgStrategy.Calculate(values), nil
+	fmt.Printf("[DEBUG] Использую стратегию: %s\n", u.strategy.Name())
+	result := u.strategy.Calculate(values)
+	fmt.Printf("[DEBUG] Оценки: %v, результат: %.2f\n", values, result)
+	return result, nil
 }
