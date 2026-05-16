@@ -32,8 +32,9 @@ func main() {
 	studentUsecase := usecase.NewStudentUsecase(studentRepo, groupRepo, gradeRepo, gradingUsecase, notifier)
 	lessonUsecase := usecase.NewLessonUsecase(lessonRepo, attendanceRepo, groupRepo, studentRepo)
 	groupUsecase := usecase.NewGroupUsecase(groupRepo, studentRepo)
+	estimatorUsecase := usecase.NewEstimatorUsecase()
 
-	handler := delivery.NewHandler(studentUsecase, lessonUsecase, gradingUsecase, groupUsecase)
+	handler := delivery.NewHandler(studentUsecase, lessonUsecase, gradingUsecase, groupUsecase, estimatorUsecase)
 	ctx := context.Background()
 	log.Println(" Запуск учебного центра...")
 	handler.Run(ctx)

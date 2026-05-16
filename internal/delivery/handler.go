@@ -21,6 +21,7 @@ type Handler struct {
 	groupUsecase   *usecase.GroupUsecase
 	reader         *bufio.Reader
 	strategies     map[string]strategy.AverageStrategy
+	estimatorUC    *usecase.EstimatorUsecase
 }
 
 func NewHandler(
@@ -28,6 +29,7 @@ func NewHandler(
 	lu *usecase.LessonUsecase,
 	gu *usecase.GradingUsecase,
 	grpU *usecase.GroupUsecase,
+	estU *usecase.EstimatorUsecase,
 ) *Handler {
 	strategies := map[string]strategy.AverageStrategy{
 		"arithmetic": &strategy.ArithmeticMean{},
@@ -41,7 +43,8 @@ func NewHandler(
 		gradingUsecase: gu,
 		groupUsecase:   grpU,
 		reader:         bufio.NewReader(os.Stdin),
-		strategies: strategies,
+		strategies:     strategies,
+		estimatorUC:    estU,
 	}
 }
 
@@ -495,6 +498,30 @@ func (h *Handler) handleStrategy(ctx context.Context, args []string) {
 	fmt.Printf("✅ Стратегия расчёта среднего балла изменена на: %s\n", strategyName)
 }
 
+func (h *Handler) handleEstimate(ctx context.Context, args []string) {
+	if len(args) < 2 {
+		fmt.Println("❌ Использование: estimate <название курса> <количество часов>")
+		fmt.Println("   Пример: estimate \"Go Advanced\" 50")
+		return
+	}
+	hours, err := strconv.Atoi(args[1])
+	if err != nil || hours <= 0 {
+		fmt.Println("❌ Часы должны быть положительным числом")
+		return
+	}
+
+	price, err := h.estimatorUC.EstimateCoursePrice(ctx, args[0], hours)
+	if err != nil {
+		h.handleError(err)
+		return
+	}
+
+	fmt.Printf("\n💰 ПРИМЕРНАЯ СТОИМОСТЬ КУРСА\n")
+	fmt.Printf("   Курс: %s\n", args[0])
+	fmt.Printf("   Часы: %d\n", hours)
+	fmt.Printf("   Стоимость (с налогом): %.2f руб.\n", price)
+}
+
 func (h *Handler) Run(ctx context.Context) {
 	fmt.Println("===================================")
 	fmt.Println("📚 Учебный центр - Система управления")
@@ -557,6 +584,9 @@ func (h *Handler) Run(ctx context.Context) {
 		case "report", "r":
 			h.handleReport(ctx, args)
 
+		case "estimate", "est":
+			h.handleEstimate(ctx, args)
+
 		case "help", "h":
 			h.printHelp()
 		case "exit", "quit":
@@ -600,6 +630,7 @@ func (h *Handler) printHelp() {
 	fmt.Println("    report <student_id> <console|html|json> - табель успеваемости")
 	fmt.Println("")
 	fmt.Println("  ОБЩЕЕ:")
+	fmt.Println("    estimate <название курса> <количество часов> - расчет примерной стоимости курса")
 	fmt.Println("    help, h - показать справку")
 	fmt.Println("    exit, quit - выход")
 }
