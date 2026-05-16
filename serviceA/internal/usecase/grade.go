@@ -3,12 +3,12 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"mins_EduCenter/internal/models"
-	"mins_EduCenter/internal/report"
-	"mins_EduCenter/internal/repository"
-	"mins_EduCenter/internal/strategy"
 	"mins_EduCenter/pkg/errors"
 	"mins_EduCenter/pkg/validation"
+	"mins_EduCenter/serviceA/internal/models"
+	"mins_EduCenter/serviceA/internal/report"
+	"mins_EduCenter/serviceA/internal/repository"
+	"mins_EduCenter/serviceA/internal/strategy"
 	"time"
 )
 

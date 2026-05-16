@@ -2,11 +2,11 @@ package usecase
 
 import (
 	"context"
-	"mins_EduCenter/internal/models"
-	"mins_EduCenter/internal/observer"
-	"mins_EduCenter/internal/repository"
 	"mins_EduCenter/pkg/errors"
 	"mins_EduCenter/pkg/validation"
+	"mins_EduCenter/serviceA/internal/models"
+	"mins_EduCenter/serviceA/internal/observer"
+	"mins_EduCenter/serviceA/internal/repository"
 	"time"
 )
 

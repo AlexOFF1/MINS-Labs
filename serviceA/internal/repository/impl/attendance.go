@@ -3,9 +3,9 @@ package impl
 import (
 	"context"
 	liberrors "errors"
-	"mins_EduCenter/internal/models"
-	"mins_EduCenter/internal/repository"
 	"mins_EduCenter/pkg/errors"
+	"mins_EduCenter/serviceA/internal/models"
+	"mins_EduCenter/serviceA/internal/repository"
 	"sync"
 	"time"
 )

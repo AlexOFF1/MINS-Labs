@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"mins_EduCenter/internal/models"
-	"mins_EduCenter/internal/strategy"
-	"mins_EduCenter/internal/usecase"
 	"mins_EduCenter/pkg/errors"
+	"mins_EduCenter/serviceA/internal/models"
+	"mins_EduCenter/serviceA/internal/strategy"
+	"mins_EduCenter/serviceA/internal/usecase"
 	"os"
 	"strconv"
 	"strings"
@@ -524,7 +524,7 @@ func (h *Handler) handleEstimate(ctx context.Context, args []string) {
 
 func (h *Handler) Run(ctx context.Context) {
 	fmt.Println("===================================")
-	fmt.Println("📚 Учебный центр - Система управления")
+	fmt.Println("📚 Учебный центр - Система управления (Service A)")
 	fmt.Println("===================================")
 	h.printHelp()
 
@@ -532,60 +532,67 @@ func (h *Handler) Run(ctx context.Context) {
 		fmt.Print("\n➤ ")
 		input, _ := h.reader.ReadString('\n')
 		input = strings.TrimSpace(input)
-		parts := strings.Fields(input)
-
-		if len(parts) == 0 {
+		if input == "" {
 			continue
 		}
 
+		// Генерируем traceID на каждую команду
+		traceID := fmt.Sprintf("trace-%d", time.Now().UnixNano())
+		ctxWithTrace := context.WithValue(ctx, "traceID", traceID)
+
+		parts := strings.Fields(input)
+		if len(parts) == 0 {
+			continue
+		}
 		cmd := parts[0]
 		args := parts[1:]
 
+		// В каждый обработчик передаём ctxWithTrace
 		switch cmd {
 		case "create-group", "cg":
-			h.handleCreateGroup(ctx, args)
+			h.handleCreateGroup(ctxWithTrace, args)
 		case "list-groups", "lg":
-			h.handleListGroups(ctx, args)
+			h.handleListGroups(ctxWithTrace, args)
 		case "group-students", "gs":
-			h.handleGroupStudents(ctx, args)
+			h.handleGroupStudents(ctxWithTrace, args)
 		case "group-status", "gst":
-			h.handleGroupStatus(ctx, args)
+			h.handleGroupStatus(ctxWithTrace, args)
 
 		case "register", "reg":
-			h.handleRegister(ctx, args)
+			h.handleRegister(ctxWithTrace, args)
 		case "enroll":
-			h.handleEnroll(ctx, args)
+			h.handleEnroll(ctxWithTrace, args)
 		case "progress", "prog":
-			h.handleProgress(ctx, args)
+			h.handleProgress(ctxWithTrace, args)
 
 		case "strategy", "strat":
-			h.handleStrategy(ctx, args)
+			h.handleStrategy(ctxWithTrace, args)
 		case "list-strategies", "lstr":
-			h.handleListStrategies(ctx, args)
+			h.handleListStrategies(ctxWithTrace, args)
 
 		case "lesson", "ls":
-			h.handleCreateLesson(ctx, args)
+			h.handleCreateLesson(ctxWithTrace, args)
 		case "schedule", "sched":
-			h.handleSchedule(ctx, args)
+			h.handleSchedule(ctxWithTrace, args)
 
 		case "mark":
-			h.handleMarkAttendance(ctx, args)
+			h.handleMarkAttendance(ctxWithTrace, args)
 		case "attendance", "attend":
-			h.handleAttendance(ctx, args)
+			h.handleAttendance(ctxWithTrace, args)
 
 		case "grade", "g":
-			h.handleSetGrade(ctx, args)
+			h.handleSetGrade(ctxWithTrace, args)
 		case "grades":
-			h.handleGetGrades(ctx, args)
+			h.handleGetGrades(ctxWithTrace, args)
 		case "gradebook", "gb":
-			h.handleGradeBook(ctx, args)
+			h.handleGradeBook(ctxWithTrace, args)
 		case "reportcard", "rc":
-			h.handleReportCard(ctx, args)
+			h.handleReportCard(ctxWithTrace, args)
 		case "report", "r":
-			h.handleReport(ctx, args)
+			h.handleReport(ctxWithTrace, args)
 
 		case "estimate", "est":
-			h.handleEstimate(ctx, args)
+			h.handleEstimate(ctxWithTrace, args)
 
 		case "help", "h":
 			h.printHelp()

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package reference;
+
+option go_package = "./proto/reference";
+
+service ReferenceService {
+  rpc GetCourse(GetCourseRequest) returns (Course);
+  rpc ListCourses(ListCoursesRequest) returns (ListCoursesResponse);
+}
+
+message GetCourseRequest {
+  string course_id = 1;
+}
+
+message Course {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  int32 duration_weeks = 4;
+  double price = 5;
+}
+
+message ListCoursesRequest {}
+
+message ListCoursesResponse {
+  repeated Course courses = 1;
+}

@@ -3,7 +3,7 @@ package report
 import (
 	"encoding/json"
 	"fmt"
-	"mins_EduCenter/internal/models"
+	"mins_EduCenter/serviceA/internal/models"
 	"time"
 )
 

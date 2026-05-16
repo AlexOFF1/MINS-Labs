@@ -2,24 +2,28 @@ package usecase
 
 import (
 	"context"
-	"mins_EduCenter/internal/models"
-	"mins_EduCenter/internal/repository"
 	"mins_EduCenter/pkg/errors"
+	"mins_EduCenter/serviceA/clients"
+	"mins_EduCenter/serviceA/internal/models"
+	"mins_EduCenter/serviceA/internal/repository"
 	"time"
 )
 
 type GroupUsecase struct {
 	groupRepo   repository.GroupRepository
 	studentRepo repository.StudentRepository
+	refClient   *clients.ReferenceClient
 }
 
 func NewGroupUsecase(
 	gr repository.GroupRepository,
 	sr repository.StudentRepository,
+	refCli *clients.ReferenceClient,
 ) *GroupUsecase {
 	return &GroupUsecase{
 		groupRepo:   gr,
 		studentRepo: sr,
+		refClient:   refCli,
 	}
 }
 
@@ -40,11 +44,13 @@ func (u *GroupUsecase) CreateGroup(ctx context.Context, dto CreateGroupDTO) (*mo
 	if dto.MaxStudents <= 0 {
 		dto.MaxStudents = 20
 	}
-	if dto.StartDate.IsZero() {
-		dto.StartDate = time.Now()
-	}
-	if dto.EndDate.IsZero() {
-		dto.EndDate = dto.StartDate.AddDate(0, 3, 0)
+
+	// Проверяем существование курса через Reference Service
+	if dto.CourseID != "" {
+		_, err := u.refClient.GetCourse(ctx, dto.CourseID)
+		if err != nil {
+			return nil, errors.NewValidationError(op, "CourseID", err.Error())
+		}
 	}
 
 	group := &models.Group{
@@ -56,7 +62,6 @@ func (u *GroupUsecase) CreateGroup(ctx context.Context, dto CreateGroupDTO) (*mo
 		MaxStudents: dto.MaxStudents,
 		StudentIDs:  []string{},
 	}
-
 	if err := u.groupRepo.Create(ctx, group); err != nil {
 		return nil, errors.NewInternalError(op, err)
 	}

@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"mins_EduCenter/internal/models"
+	"mins_EduCenter/serviceA/internal/models"
 	"time"
 )
 
